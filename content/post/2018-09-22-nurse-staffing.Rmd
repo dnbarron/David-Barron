@@ -1,0 +1,80 @@
+---
+title: Nurse staffing
+author: David Barron
+date: '2018-09-22'
+slug: nurse-staffing
+categories:
+  - nursing
+  - staffing
+tags:
+  - nursing
+  - staffing
+header:
+  caption: ''
+  image: ''
+---
+
+```{r setup, echo = FALSE, message=FALSE}
+library(readxl)
+library(tidyverse, quietly = TRUE)
+
+```
+
+It has been widely reported that there is a [serious shortage of nurses in the NHS](https://publications.parliament.uk/pa/cm201719/cmselect/cmhealth/353/353.pdf).  These shortages are reported to be impacting on staff morale and therefore retention, which is no doubt contributing to the problem.  Furthermore, there are serious implications for the quality of patient care.
+
+However, it isn't completely straightforward to determine the precise scale of the problem. The number of nurses has increased by 1,600 since 2010, which is about 1% of the nursing workforce, but this is much lower than the corresponding increase in the number of doctors and the increase in the size of the UK population.
+
+```{r oecd, echo = FALSE}
+oecd <- readxl::read_excel("OECD.xlsx")
+
+oecd %>%
+  select(Country = LOCATION, Year = TIME, Value) %>%
+  group_by(Country) %>%
+  filter(Year == max(Year)) %>%
+  mutate(isUK = case_when(Country == "GBR" ~ "red",
+                          TRUE ~ NA_character_))   %>%
+  ggplot(aes(x = forcats::fct_reorder(Country, Value), y = Value)) +
+  geom_bar(aes(fill = isUK), stat = "identity") +
+  theme_minimal() + 
+  ggtitle("Nurses per 1,000 inhabitants, most recent year available",
+          subtitle = "Source: OECD") +
+  theme(axis.text.x = element_text(size = rel(0.8), angle = 45),
+        legend.position = "none") +
+  xlab("Country") + ylab("")
+```
+
+```{r data, echo = FALSE, warning=FALSE, message=FALSE}
+
+#url1 <- "https://files.digital.nhs.uk/B4/BDB9DA/NHS%20Workforce%20Statistics%2C%20May%202018%20Staff%20Group%2C%20Area%20and%20Level%20-%20Excel%20tables.xlsx"
+
+fn <- "C:\\Users\\dbarron\\Dropbox\\David-Barron\\content\\post\\NHS-Workforce.xlsx"
+
+#x <- httr::GET(url1, httr::write_disk(fn, overwrite = TRUE))
+
+dta <- readxl::read_xlsx(fn, sheet = "Nurses and Midwives",
+                         range = "E11:DE12")
+
+dta <- t(dta)
+
+Date <- as.numeric(row.names(dta))
+Date <- as.Date(Date, origin = "1899-12-30")
+
+dt <- data_frame(Date, Nurses = dta[, 1])
+
+dt <- dt %>% mutate(Change = (Nurses - lag(Nurses, 12)) / lag(Nurses, 12),
+                    Sign = factor(sign(Change))) %>%
+  filter(!is.na(Change))
+
+#readr::write_csv(dt, "c:/users/dbarron/dropbox/David-Barron/content/post/nurse-changes.csv")
+
+
+#dt <- readr::read_csv("c:/users/dbarron/dropbox/David-Barron/content/post/nurse-changes.csv")
+
+dt %>% 
+  ggplot(aes(x = Date, y = Change)) +
+    geom_bar(aes(fill = Sign), stat = 'identity') +
+    theme_bw() + theme(legend.position = 'none') + 
+    scale_y_continuous(labels = scales::percent) +
+    ggtitle("Change in the number of nurses and midwives compared with the previous year",
+            subtitle = "Source: NHS Digital")
+```
