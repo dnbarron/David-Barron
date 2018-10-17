@@ -31,8 +31,8 @@ oecd %>%
   select(Country = LOCATION, Year = TIME, Value) %>%
   group_by(Country) %>%
   filter(Year == max(Year)) %>%
-  mutate(isUK = case_when(Country == "GBR" ~ "red",
-                          TRUE ~ NA_character_))   %>%
+  mutate(isUK = case_when(Country == "GBR" ~ "UK",
+                          TRUE ~ "notUK"))   %>%
   ggplot(aes(x = forcats::fct_reorder(Country, Value), y = Value)) +
   geom_bar(aes(fill = isUK), stat = "identity") +
   theme_minimal() + 
@@ -40,8 +40,10 @@ oecd %>%
           subtitle = "Source: OECD") +
   theme(axis.text.x = element_text(size = rel(0.8), angle = 45),
         legend.position = "none") +
-  xlab("Country") + ylab("")
+  xlab("Country") + ylab("") + 
+  scale_fill_manual(values = c("grey50", "firebrick3"))
 ```
+One way of thinking about the issue is to compare the number of nurses in different countries.  The figure shows [data from the OECD](https://data.oecd.org/healthres/nurses.htm), comparing the number of nurses per 1,000 people in the population across OECD countries (mostly for 2017).  As can be seen, the UK has 7.9 nurses per 1,000 people, which is ranked 21 among the OECD and 13 among the EU.  However, these figures are difficult to use because in some countries "nurses" include people with nursing qualifications working in management, education and research as well as though providing patient care.  Still, they suggest that the number of nurses is well below that found in many comparable countries.
 
 ```{r data, echo = FALSE, warning=FALSE, message=FALSE}
 
@@ -78,3 +80,23 @@ dt %>%
     ggtitle("Change in the number of nurses and midwives compared with the previous year",
             subtitle = "Source: NHS Digital")
 ```
+
+A second approach would be to look to see what the change in the number of nurses has been, year on year.  The figure shown here is based on [data from NHS Digital](https://digital.nhs.uk/data-and-information/publications/statistical/nhs-workforce-statistics).  It indicates that there was a marked decline in nurses between 2011 and 2013, that numbers then grew until 2017, and have been relatively stable since then. However, looking at numbers like this doesn't tell us whether NHS Trusts are able to recruit as many nurses as they think they need.  The size of the nursing establishment rose significantly in the aftermath of the Mid-Staffs enquiry report, but creating more nursing *posts* isn't necessarily the same as being able to hire more nurses.
+
+
+```{r vacancies, echo = FALSE, message=FALSE}
+vacs <- readr::read_csv("Nurse-vacancies.csv")
+ggplot(vacs, aes(x = as.factor(Quarter), y = Vacancies)) + 
+  geom_point(colour = "red") +
+  geom_linerange(aes(ymin = 0, ymax = Vacancies)) +
+  theme_minimal() +
+  ggtitle("Advertised FTE nurse vacancies",
+          subtitle = "Source: NHS Digital") +
+  xlab("Quarter")
+
+```
+A third approach is to look at published data on advertised vacancies, also available from [NHS Digital](https://digital.nhs.uk/data-and-information/publications/statistical/nhs-vacancies-survey/nhs-vacancy-statistics-england---february-2015---march-2018-provisional-experimental-statistics).  These also have to be treated with some caution, as it possible that posts aren't filled if a Trust's finances don't permit it. The figure shows that the number of advertised nursing vacancies increased by 26% between the second quarter of 2015 and the first quarter of 2018, to a total of 35,000, or 11% of the nursing workforce.  This figure is in line with estimates by the [Royal College of Nursing](http://data.parliament.uk/writtenevidence/committeeevidence.svc/evidencedocument/health-committee/nursing-workforce/written/71393.pdf).
+
+The implication of this is that hospital trusts are likely to have a significant challenge to ensure appropriate levels of nurse staffing.  The most likely means by which they can achieve this is to use agency staff, who are of course much more expensive than permanent staff.  Agency staff may also find it more challenging to deliver high quality care because of their relative unfamiliarity with the units in which they are working.
+
+In future posts I will explore the reasons why there is such a significant shortfall and what its impacts on patients and trust finances are.
